@@ -8,50 +8,23 @@ side channel attacks and other information leakage applications available.
 
 from scapy.all import *
 import argparse
-import _thread
 import time
-import select
-import os
-
-def sniff_packets(host, port, iface=None):
-    '''Sets up the packet sniffer'''
-    try:    
-        if iface:
-            sniff(filter="((tcp[tcpflags] & tcp-ack) != 0) and host " + host + " and port " + port, prn=process_packet, iface=iface, store=False)
-        else:
-            sniff(filter="((tcp[tcpflags] & tcp-ack) != 0) and host " + host + " and port " + port, prn=process_packet, store=False)
-    except:
-        print("Unable to sniff packets, do you have suitable permission")
-        os._exit(1)
-
-def process_packet(packet):
-    '''Processes the packets, updating the timestamp as needed'''
-    global TSval
-    
-    if TCP in packet:
-        for opt, val in packet[TCP].options:
-            if opt == 'Timestamp':
-                TSval, TSecr = val
 
 def getTS(host, port):
-    '''Connects to a host on a given port
-       Will send data if required
     '''
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((host, int(port)))
-    s.setblocking(0)
-    ready = select.select([s],[], [], 1)
-    if ready[0]:
-        foo = s.recv(1024)
-        if TSval == 0:
-            s.send(bytes("Spooky message","utf-8"))
-            ready = select.select([s], [], [], 1)
-            if ready[0]:
-                foo = s.recv(1024)
-        
-    s.shutdown(socket.SHUT_RDWR)
-    s.close()
-    return TSval
+    This will only do a SYN and not the full 3-way handshake.  As noted in the original paper Win2k did not send a TS
+    until data was sent to it.  I no longer have a Win2k box to test against so I dont do that anymore.
+
+    If you need to actually send data you will have to do the 3-way handshake yourself (lots of examples exist) or you will
+    have to run the sniffer in a separate thread/process
+    '''
+    packet = sr1(IP(dst=host)/TCP(sport=5150, dport=port, flags="S", options=[('Timestamp', (1337,0))], seq=100), verbose=0)
+    for opt, val in packet[TCP].options:
+        if opt == 'Timestamp':
+            TSval, TSecr = val
+            return TSval
+    return 0
+
 
 if __name__ == "__main__":
     TSval = 0
@@ -63,37 +36,31 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     
-    try:
-        _thread.start_new_thread(sniff_packets, (args.server, args.port, args.iface))
-        time.sleep(1)
-        TSval1 = getTS(args.server, args.port)
-        time.sleep(1)
-        TSval2 = getTS(args.server, args.port)
+    TSval1 = getTS(args.server, int(args.port))
+    # Wait 1 second to get the tick interval
+    time.sleep(1)
+    TSval2 = getTS(args.server, int(args.port))
 
-        tickrate = TSval2 - TSval1
-        if tickrate:
-            if(tickrate < 1300 and tickrate > 700):
-                tickrate=1000
-            elif(tickrate < 130 and tickrate > 70):
-                tickrate=100
-            elif(tickrate < 30 and tickrate > 7):
-                tickrate=10
-            elif(tickrate < 4 and tickrate > 1):
-                tickrate=2
-            else:
-                print("Unknown tickrate - uptime may be incorrect")
-                
-            day=int((TSval2/tickrate)/86400);
-            sec=int((TSval2/tickrate)%86400);
-            hour=int(sec/3600);
-            sec=int(sec%3600);
-            m=int(sec/60);
-            sec=int(sec%60);
-        
-            print(f"{args.server} (Tickrate {tickrate}/sec) Uptime: {day} days, {hour:02d}:{m:02d}:{sec:02d}")
+    tickrate = TSval2 - TSval1
+    if tickrate:
+        if(tickrate < 1300 and tickrate > 700):
+            tickrate=1000
+        elif(tickrate < 130 and tickrate > 70):
+            tickrate=100
+        elif(tickrate < 30 and tickrate > 7):
+            tickrate=10
+        elif(tickrate < 4 and tickrate > 1):
+            tickrate=2
         else:
-            print("The remote system does not appear to support TCP Timestamping")
-            
-    except:
-        print("Error: unable to start thread")
-
+            print("Unknown tickrate - uptime may be incorrect")
+                
+        day=int((TSval2/tickrate)/86400);
+        sec=int((TSval2/tickrate)%86400);
+        hour=int(sec/3600);
+        sec=int(sec%3600);
+        m=int(sec/60);
+        sec=int(sec%60);
+        
+        print(f"{args.server} (Tickrate {tickrate}/sec) Uptime: {day} days, {hour:02d}:{m:02d}:{sec:02d}")
+    else:
+        print("The remote system does not appear to support TCP Timestamping")

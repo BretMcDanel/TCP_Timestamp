@@ -4,12 +4,12 @@ On March 11, 2001 I wrote a paper titled "TCP Timestamping - Obtaining System Up
 At the time the nexus between system uptime and the TCP timestamp value was not widely known information.  Nmap had only added this feature 2 days before I posted my paper.  This work has also been cited by others, in fact it is probably my most cited paper.  
 
 # The Update to Python
-It is still relevant information so I thought I might revisit this and update it to use Python3 instead of C and a kernel change.  The new version uses Scapy to sniff the network interface in a separate thread and shows how you can trivially obtain the TCP timestamp information for further research projects.
+It is still relevant information so I thought I might revisit this and update it to use Python3 instead of C and a kernel change.  The new version uses Scapy to send a SYN packet and get the timestamp back.  If you need to send data (eg a side channel attack) you will have to implement the 3-way handshake yourself or run the sniffing component in a different thread.  Plenty of examples exist on how to do that.
 
 This is more than just fingerprinting a system.  Side channel attacks exist when a process will return faster if the user does not exist vs it exists but the password is invalid (or if a MAC terminates on the first incorrect value).  There are many other ways to use this information.
 
 # Cites
-Got others?  Lemme know!  Even though the original paper was base research, I am still pleased that it has been cited for over **21 years** and furthered the work of others in some small way.
+Got others?  Lemme know!  Even though the original paper was base research, I am still pleased that it has been cited for over **20 years** and furthered the work of others in some small way.
 
 * [Remote Timing Techniques over TCP/IP](https://static.lwn.net/2002/0425/a/lacy.php3) - Mauro Lacy - Bugtraq April 18, 2002
 * [Passive Network Discovery for Real Time Situation Awareness](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.65.3549&rep=rep1&type=pdf) Annie De Montigny-Leboeuf, Frédéric Massicotte - Communication Research Centre Canada - Presented at RTO IST Symposium on “Adaptive Defence in Unclassified Networks” April 19-20, 2004
