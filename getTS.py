@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+'''
+This is a rewrite of a program I originally did in C in 2011.  It is not well tested.
+This program shows how it is possible to recover TCP timestamps from a connection.
+Originally the program would reveal the uptime of a system, however there are
+side channel attacks and other information leakage applications available.
+'''
 
 from scapy.all import *
 import argparse
@@ -11,10 +17,9 @@ def sniff_packets(host, port, iface=None):
     '''Sets up the packet sniffer'''
     try:    
         if iface:
-            #sniff(filter="port "+str(port), prn=process_packet, iface=iface, store=False)
             sniff(filter="((tcp[tcpflags] & tcp-ack) != 0) and host " + host + " and port " + port, prn=process_packet, iface=iface, store=False)
         else:
-            sniff(filter="host "+host+" and port "+port, prn=process_packet, store=False)
+            sniff(filter="((tcp[tcpflags] & tcp-ack) != 0) and host " + host + " and port " + port, prn=process_packet, store=False)
     except:
         print("Unable to sniff packets, do you have suitable permission")
         os._exit(1)
