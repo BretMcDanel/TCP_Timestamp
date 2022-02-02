@@ -27,8 +27,6 @@ def getTS(host, port):
 
 
 if __name__ == "__main__":
-    TSval = 0
-
     parser = argparse.ArgumentParser(description="Timestamp collector.")
     parser.add_argument("-i", "--iface", help="Interface to use, default is scapy's default interface")
     parser.add_argument("-s", "--server", help="Server name to connect to", required=True)
